@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Chakra Petch', sans-serif;
+    --font-numbers: 'Teko', 'Chakra Petch', sans-serif;
+  }
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-numbers {
+  font-family: var(--font-numbers);
+  letter-spacing: 0.05em;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), inset 0 0 10px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.8), inset 0 0 20px rgba(16, 185, 129, 0.4);
+  }
+}
+
+@keyframes alertGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), inset 0 0 15px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.9), inset 0 0 25px rgba(239, 68, 68, 0.6);
+  }
+}
+
+@keyframes freeHitGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(245, 158, 11, 0.9);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.animate-alert-glow {
+  animation: alertGlow 1.2s infinite ease-in-out;
+}
+
+.animate-freehit-glow {
+  animation: freeHitGlow 1.5s infinite ease-in-out;
+}
+
+/* Custom scrollbars for clean control panel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090e17;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

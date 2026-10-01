@@ -1,0 +1,8 @@
+{
+  "name": "ITC SPORTS Scoreboard & Live Cricket Broadcast",
+  "description": "Professional cricket scoring engine and live broadcast overlay system with real-time sync, team & player libraries, and vMix OBS integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
