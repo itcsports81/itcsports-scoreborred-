@@ -86,8 +86,37 @@ export function BroadcastOverlay() {
     (d) => d.inningIndex === match.currentInningIndex && d.overIndex === currentOverIndex
   );
 
+  const bgType = overlaySettings?.bgType || 'transparent';
+  let dynamicBgClass = 'w-screen h-screen relative overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none pointer-events-none ';
+  if (bgType === 'solid') dynamicBgClass += 'bg-[#080d19] text-white';
+  else if (bgType === 'gradient') dynamicBgClass += 'bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white';
+  else if (bgType === 'dark') dynamicBgClass += 'bg-slate-950 text-slate-100';
+  else if (bgType === 'light') dynamicBgClass += 'bg-slate-100 text-slate-900';
+  else dynamicBgClass += 'bg-transparent text-white';
+
+  const customBgStyle: React.CSSProperties = {};
+  if (bgType === 'image' && overlaySettings?.bgImageUrl) {
+    customBgStyle.backgroundImage = `url(${overlaySettings.bgImageUrl})`;
+    customBgStyle.backgroundSize = 'cover';
+    customBgStyle.backgroundPosition = 'center';
+  }
+
   return (
-    <div className="w-screen h-screen bg-transparent relative overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none pointer-events-none">
+    <div
+      className={dynamicBgClass}
+      style={customBgStyle}
+    >
+      {bgType === 'video' && overlaySettings?.bgVideoUrl && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-50 z-0 pointer-events-none"
+        >
+          <source src={overlaySettings.bgVideoUrl} type="video/mp4" />
+        </video>
+      )}
       {/* ANIMATION POPUP BANNER (4, 6, WICKET, FREE HIT, POWERPLAY, RESULT) */}
       {overlaySettings.showAnimations && activeEvent && (
         <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none animate-in fade-in zoom-in-95 duration-200">
@@ -143,7 +172,146 @@ export function BroadcastOverlay() {
         </div>
       )}
 
-      {/* MID SCREEN GRAPHIC OVERLAYS: SQUADS, SUMMARY, SCORECARD */}
+      {/* MID SCREEN GRAPHIC OVERLAYS: SQUADS, SUMMARY, SCORECARD, STATS, LOWER THIRDS */}
+      {activeGraphicType === 'MINI_BUG' && (
+        <div className="m-auto bg-[#080d1a]/95 border border-emerald-500/80 rounded-xl px-6 py-3 shadow-2xl flex items-center gap-4 pointer-events-auto">
+          <span className="font-heading font-black text-emerald-400">{battingTeam.shortName}</span>
+          <span className="font-numbers text-2xl font-bold text-white">{currentInning.runs}/{currentInning.wickets}</span>
+          <span className="text-xs text-slate-400">({currentInning.oversString} ov) - CRR {crr}</span>
+        </div>
+      )}
+
+      {activeGraphicType === 'CURRENT_PARTNERSHIP' && (
+        <div className="m-auto w-full max-w-lg bg-[#080d1a]/95 border-2 border-emerald-500/80 rounded-2xl p-6 shadow-2xl pointer-events-auto">
+          <div className="text-xs uppercase font-heading text-emerald-400 mb-1">Current Partnership</div>
+          <div className="text-2xl font-black font-heading text-white mb-3">
+            {striker?.shortName || 'Batter 1'} & {nonStriker?.shortName || 'Batter 2'}
+          </div>
+          <div className="flex justify-between items-center bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+            <div>
+              <div className="text-3xl font-black font-numbers text-emerald-400">
+                {currentInning.currentPartnership?.totalRuns || 0} <span className="text-sm font-normal text-slate-400">runs</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-xl font-bold font-numbers text-slate-200">
+                {currentInning.currentPartnership?.balls || 0} <span className="text-sm font-normal text-slate-400">balls</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'TOP_SCORERS' && (
+        <div className="m-auto w-full max-w-xl bg-[#080d1a]/95 border-2 border-emerald-500/80 rounded-2xl p-6 shadow-2xl pointer-events-auto">
+          <div className="text-xs uppercase font-heading text-emerald-400 mb-2">Top Scorers - {battingTeam.name}</div>
+          <div className="space-y-2">
+            {currentInning.batters.slice(0, 5).map((b, idx) => (
+              <div key={b.playerId} className="flex justify-between items-center bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                <span className="font-bold text-white flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center">#{idx+1}</span>
+                  {b.playerName}
+                </span>
+                <span className="font-numbers font-bold text-emerald-400 text-lg">
+                  {b.runs} <span className="text-xs text-slate-400 font-sans">({b.balls}b, {b.fours}x4, {b.sixes}x6)</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'BEST_BOWLERS' && (
+        <div className="m-auto w-full max-w-xl bg-[#080d1a]/95 border-2 border-emerald-500/80 rounded-2xl p-6 shadow-2xl pointer-events-auto">
+          <div className="text-xs uppercase font-heading text-emerald-400 mb-2">Best Bowlers - {bowlingTeam.name}</div>
+          <div className="space-y-2">
+            {currentInning.bowlers.slice(0, 5).map((bw, idx) => {
+              const ov = `${Math.floor(bw.legalBalls / 6)}.${bw.legalBalls % 6}`;
+              return (
+                <div key={bw.playerId} className="flex justify-between items-center bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                  <span className="font-bold text-white flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center">#{idx+1}</span>
+                    {bw.playerName}
+                  </span>
+                  <span className="font-numbers font-bold text-emerald-400 text-lg">
+                    {bw.wickets}/{bw.runsConceded} <span className="text-xs text-slate-400 font-sans">({ov} ov, Eco {bw.economy.toFixed(1)})</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'TEAM_COMPARISON' && (
+        <div className="m-auto w-full max-w-2xl bg-[#080d1a]/95 border-2 border-emerald-500/80 rounded-2xl p-6 shadow-2xl pointer-events-auto">
+          <div className="text-xs uppercase font-heading text-emerald-400 mb-3 text-center">Team Comparison & Run Rates</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-900/80 p-4 rounded-xl border border-emerald-500/40 text-center">
+              <div className="font-heading font-bold text-white">{match.teamA.name}</div>
+              <div className="font-numbers text-3xl font-black text-emerald-400 my-2">
+                {match.innings[0] ? `${match.innings[0].runs}/${match.innings[0].wickets}` : '0/0'}
+              </div>
+              <div className="text-xs text-slate-400">Overs: {match.innings[0]?.oversString || '0.0'}</div>
+            </div>
+            <div className="bg-slate-900/80 p-4 rounded-xl border border-blue-500/40 text-center">
+              <div className="font-heading font-bold text-white">{match.teamB.name}</div>
+              <div className="font-numbers text-3xl font-black text-blue-400 my-2">
+                {match.innings[1] ? `${match.innings[1].runs}/${match.innings[1].wickets}` : 'Yet to bat'}
+              </div>
+              <div className="text-xs text-slate-400">Overs: {match.innings[1]?.oversString || '0.0'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'PLAYER_INTRO' && striker && (
+        <div className="m-auto w-full max-w-lg bg-gradient-to-r from-emerald-950 via-[#080d1a] to-slate-950 border-2 border-emerald-400 rounded-2xl p-6 shadow-2xl pointer-events-auto flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-black flex items-center justify-center font-heading font-black text-2xl shadow-lg">
+            ⭐
+          </div>
+          <div>
+            <div className="text-xs uppercase font-heading tracking-widest text-emerald-400">Current Batter</div>
+            <div className="text-3xl font-black font-heading text-white">{striker.playerName}</div>
+            <div className="text-xs text-slate-300 mt-1">Batting Order #{striker.battingOrder}</div>
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'BOWLER_INTRO' && bowler && (
+        <div className="m-auto w-full max-w-lg bg-gradient-to-r from-blue-950 via-[#080d1a] to-slate-950 border-2 border-blue-400 rounded-2xl p-6 shadow-2xl pointer-events-auto flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-blue-500 text-white flex items-center justify-center font-heading font-black text-2xl shadow-lg">
+            ⚡
+          </div>
+          <div>
+            <div className="text-xs uppercase font-heading tracking-widest text-blue-400">Current Bowler</div>
+            <div className="text-3xl font-black font-heading text-white">{bowler.playerName}</div>
+            <div className="text-xs text-slate-300 mt-1">Economy: {bowler.economy.toFixed(1)}</div>
+          </div>
+        </div>
+      )}
+
+      {activeGraphicType === 'MATCH_INFO' && (
+        <div className="m-auto w-full max-w-xl bg-[#080d1a]/95 border-2 border-emerald-500/80 rounded-2xl p-6 shadow-2xl pointer-events-auto text-center">
+          <div className="text-xs uppercase font-heading text-emerald-400 mb-1">{match.tournamentName || 'ITC SPORTS TOURNAMENT'}</div>
+          <div className="text-2xl font-black font-heading text-white mb-2">{match.matchName}</div>
+          <div className="text-sm text-slate-300">Venue: {match.venue}</div>
+          <div className="text-xs text-slate-400 mt-1">Date: {match.date}</div>
+        </div>
+      )}
+
+      {activeGraphicType === 'RESULT_BANNER' && (
+        <div className="m-auto w-full max-w-xl bg-gradient-to-tr from-emerald-950 via-slate-950 to-emerald-900 border-2 border-emerald-400 rounded-2xl p-8 shadow-2xl pointer-events-auto text-center">
+          <div className="text-xs uppercase font-heading text-emerald-400 tracking-widest mb-1">OFFICIAL MATCH RESULT</div>
+          <div className="text-3xl md:text-4xl font-black font-heading text-white mb-3">
+            {match.resultSummary || 'MATCH COMPLETED'}
+          </div>
+          <div className="text-xs text-slate-300 uppercase tracking-widest">
+            {match.tournamentName} • {match.venue}
+          </div>
+        </div>
+      )}
+
       {activeGraphicType === 'BOTH_SQUADS' && (
         <BroadcastBothSquadsGraphic
           match={match}
@@ -324,6 +492,24 @@ function ScorebugComponent({
     ? `${Math.floor(bowler.legalBalls / 6)}.${bowler.legalBalls % 6}`
     : '0.0';
 
+  const theme = (overlaySettings?.theme || 'itc_premium') as string;
+  const themeMap: Record<string, { border: string; badge: string; text: string; bg: string }> = {
+    itc_premium: { border: 'border-emerald-500/80', badge: 'bg-emerald-500 text-black font-black', text: 'text-emerald-400', bg: 'bg-[#050811]/95' },
+    itc_gold: { border: 'border-amber-400/90', badge: 'bg-amber-500 text-black font-black', text: 'text-amber-400', bg: 'bg-[#0a0a0c]/95' },
+    itc_neon: { border: 'border-cyan-400/90', badge: 'bg-cyan-500 text-black font-black', text: 'text-cyan-400', bg: 'bg-[#020617]/95' },
+    emerald_pro: { border: 'border-emerald-500/80', badge: 'bg-emerald-500 text-black', text: 'text-emerald-400', bg: 'bg-[#070b14]/95' },
+    royal_blue: { border: 'border-blue-500/80', badge: 'bg-blue-500 text-white', text: 'text-blue-400', bg: 'bg-[#091026]/95' },
+    neon_gold: { border: 'border-amber-400/80', badge: 'bg-amber-400 text-black', text: 'text-amber-300', bg: 'bg-[#141208]/95' },
+  };
+  const themeStyles = themeMap[theme] || themeMap['itc_premium'];
+
+  const chassisStyle: React.CSSProperties = {};
+  if (theme === 'custom') {
+    if (overlaySettings?.customBg) chassisStyle.backgroundColor = overlaySettings.customBg;
+    if (overlaySettings?.customBorder) chassisStyle.borderColor = overlaySettings.customBorder;
+    if (overlaySettings?.customText) chassisStyle.color = overlaySettings.customText;
+  }
+
   return (
     <div className="flex flex-col items-center w-full max-w-5xl transition-all">
       {/* SPECIAL BADGES BAR: FREE HIT, POWERPLAY, TARGET */}
@@ -344,7 +530,7 @@ function ScorebugComponent({
         {isSecondInning && (
           <div className="bg-[#0b1324]/90 border border-slate-700 text-slate-200 px-3 py-0.5 rounded font-heading text-xs shadow-md flex items-center gap-2">
             <span>
-              TARGET: <strong className="text-emerald-400 font-numbers text-sm">{targetRuns}</strong>
+              TARGET: <strong className={`${themeStyles.text} font-numbers text-sm`}>{targetRuns}</strong>
             </span>
             <span className="text-slate-500">•</span>
             <span>
@@ -353,7 +539,7 @@ function ScorebugComponent({
             </span>
             <span className="text-slate-500">•</span>
             <span>
-              RRR: <strong className="text-emerald-400 font-numbers text-sm">{rrr.toFixed(2)}</strong>
+              RRR: <strong className={`${themeStyles.text} font-numbers text-sm`}>{rrr.toFixed(2)}</strong>
             </span>
           </div>
         )}
@@ -366,11 +552,14 @@ function ScorebugComponent({
       </div>
 
       {/* MAIN SCOREBUG CHASSIS */}
-      <div className="w-full bg-[#070b14]/95 border-2 border-emerald-500/80 rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-slate-800">
+      <div
+        style={chassisStyle}
+        className={`w-full ${theme === 'custom' ? 'bg-slate-900/95' : themeStyles.bg} border-2 ${theme === 'custom' ? '' : themeStyles.border} rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-slate-800`}
+      >
         {/* BRAND & TEAM SECTION */}
         <div className="flex items-center px-4 py-2 bg-gradient-to-r from-[#03060c] to-[#0a101f] gap-3">
           {/* Broadcaster Logo Badge */}
-          <div className="flex flex-col items-center justify-center bg-emerald-500 text-black px-2.5 py-1 rounded font-heading font-black leading-none">
+          <div className={`flex flex-col items-center justify-center ${themeStyles.badge} px-2.5 py-1 rounded font-heading font-black leading-none`}>
             <span className="text-[10px] tracking-tight">ITC</span>
             <span className="text-[8px] tracking-widest font-sans font-bold">SPORTS</span>
           </div>
@@ -384,7 +573,7 @@ function ScorebugComponent({
                 className="w-9 h-9 object-contain rounded-md bg-black/40 p-0.5 border border-slate-700"
               />
             ) : (
-              <div className="w-9 h-9 rounded-md bg-emerald-950 border border-emerald-500/40 flex items-center justify-center font-heading font-bold text-emerald-400 text-xs">
+              <div className={`w-9 h-9 rounded-md bg-emerald-950 border ${themeStyles.border} flex items-center justify-center font-heading font-bold ${themeStyles.text} text-xs`}>
                 {battingTeam?.shortName || 'BAT'}
               </div>
             )}
@@ -392,7 +581,7 @@ function ScorebugComponent({
               <span className="font-heading font-black text-xl text-white tracking-wider leading-none">
                 {battingTeam?.shortName || battingTeam?.name || 'TEAM'}
               </span>
-              <span className="text-[10px] font-heading text-emerald-400 tracking-wider uppercase mt-0.5">
+              <span className={`text-[10px] font-heading ${themeStyles.text} tracking-wider uppercase mt-0.5`}>
                 {match.tournamentName || 'LIVE CRICKET'}
               </span>
             </div>

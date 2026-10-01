@@ -276,15 +276,54 @@ export type OverlayGraphicType =
   | 'BOTH_SQUADS'
   | 'TEAM_A_SQUAD'
   | 'TEAM_B_SQUAD'
-  | 'MATCH_SUMMARY';
+  | 'MATCH_SUMMARY'
+  | 'CURRENT_PARTNERSHIP'
+  | 'HIGHEST_PARTNERSHIP'
+  | 'TOP_SCORERS'
+  | 'BEST_BOWLERS'
+  | 'TEAM_COMPARISON'
+  | 'RUN_RATE_STATS'
+  | 'LAST_5_OVERS'
+  | 'LAST_10_OVERS'
+  | 'FALL_OF_WICKETS'
+  | 'PREVIOUS_OVER'
+  | 'OVER_SUMMARY'
+  | 'PLAYER_INTRO'
+  | 'BOWLER_INTRO'
+  | 'TEAM_INTRO'
+  | 'MATCH_INFO'
+  | 'VENUE_INFO'
+  | 'TOURNAMENT_INFO'
+  | 'RESULT_BANNER';
 
 export interface BroadcastOverlaySettings {
   showSponsor: boolean;
   showAnimations: boolean;
-  theme: 'itc_dark' | 'emerald_pro' | 'carbon_black';
+  showLogo: boolean;
+  showTicker: boolean;
+  theme: 'itc_premium' | 'itc_gold' | 'itc_neon' | 'emerald_pro' | 'royal_blue' | 'neon_gold' | 'crimson_red' | 'cyber_purple' | 'carbon_black' | 'itc_dark' | 'custom';
   position: 'bottom' | 'top';
   opacity: number;
   activeGraphic: OverlayGraphicType;
+  // Background options
+  bgType: 'transparent' | 'solid' | 'gradient' | 'dark' | 'light' | 'image' | 'video';
+  bgImageUrl?: string;
+  bgVideoUrl?: string;
+  bgSolidColor?: string;
+  bgGradientType?: string;
+  blurLevel: number; // 0 to 20
+  brightness: number; // 50 to 150
+  overlayDarkness: number; // 0 to 100
+  // Custom theme colors
+  customPrimary?: string;
+  customSecondary?: string;
+  customAccent?: string;
+  customText?: string;
+  customBg?: string;
+  customBorder?: string;
+  // Animation options
+  animationStyle: 'slide_in' | 'slide_out' | 'fade_in' | 'zoom' | 'bounce' | 'glow' | 'shimmer' | 'pulse' | 'smooth_slide' | 'none';
+  animationSpeed: 'slow' | 'normal' | 'fast';
 }
 
 export interface AppDatabase {

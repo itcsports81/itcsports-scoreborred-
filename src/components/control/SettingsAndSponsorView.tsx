@@ -202,13 +202,219 @@ export function SettingsAndSponsorView({ sponsor, overlaySettings, match, onClos
         </div>
       </div>
 
-      {/* SECTION 2: OVERLAY VISUAL SETTINGS */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-        <h3 className="text-base font-bold font-heading text-emerald-400 uppercase tracking-wide mb-4">
-          Broadcast Overlay Position & Graphics
-        </h3>
+      {/* SECTION 2: PROFESSIONAL THEME SELECTOR & COLOR CUSTOMIZATION SYSTEM */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black font-heading text-emerald-400 uppercase tracking-wide">
+              🏆 Professional Theme & Color Customization System
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Select one of 3 professional broadcast themes or configure custom color pickers. Changes update the live /overlay automatically for vMix/OBS.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const updated = { ...localOverlay, activeGraphic: 'SCOREBUG' as const };
+              setLocalOverlay(updated);
+              await liveSync.saveOverlaySettings(updated);
+            }}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-heading font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span>🟢 Show Clean Scorebug Only</span>
+          </button>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        {/* THEME SELECTION BUTTONS BAR */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_premium' })}
+            className={`px-5 py-3 rounded-xl font-heading font-black text-xs transition-all border-2 flex items-center gap-2 ${
+              localOverlay.theme === 'itc_premium'
+                ? 'bg-emerald-500 text-black border-emerald-300 shadow-lg scale-105'
+                : 'bg-slate-950 text-emerald-400 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <span>[ ITC PREMIUM ]</span>
+            {localOverlay.theme === 'itc_premium' && <span>✓</span>}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_gold' })}
+            className={`px-5 py-3 rounded-xl font-heading font-black text-xs transition-all border-2 flex items-center gap-2 ${
+              localOverlay.theme === 'itc_gold'
+                ? 'bg-amber-400 text-black border-amber-200 shadow-lg scale-105'
+                : 'bg-slate-950 text-amber-400 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <span>[ ITC GOLD ]</span>
+            {localOverlay.theme === 'itc_gold' && <span>✓</span>}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_neon' })}
+            className={`px-5 py-3 rounded-xl font-heading font-black text-xs transition-all border-2 flex items-center gap-2 ${
+              localOverlay.theme === 'itc_neon'
+                ? 'bg-cyan-400 text-black border-cyan-200 shadow-lg scale-105'
+                : 'bg-slate-950 text-cyan-400 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <span>[ ITC NEON ]</span>
+            {localOverlay.theme === 'itc_neon' && <span>✓</span>}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'custom' })}
+            className={`px-5 py-3 rounded-xl font-heading font-bold text-xs transition-all border-2 flex items-center gap-2 ${
+              localOverlay.theme === 'custom'
+                ? 'bg-purple-500 text-white border-purple-300 shadow-lg scale-105'
+                : 'bg-slate-950 text-purple-400 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <span>[ CUSTOM COLORS ]</span>
+            {localOverlay.theme === 'custom' && <span>✓</span>}
+          </button>
+        </div>
+
+        {/* 3 PREVIEW CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* THEME 1 PREVIEW */}
+          <div
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_premium' })}
+            className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${
+              localOverlay.theme === 'itc_premium' ? 'bg-emerald-950/40 border-emerald-400' : 'bg-slate-950/70 border-slate-800'
+            }`}
+          >
+            <div className="text-[10px] font-heading font-black text-emerald-400 uppercase mb-1">Theme 1</div>
+            <div className="text-sm font-bold text-white mb-2">ITC SPORTS PREMIUM</div>
+            <div className="bg-[#050811] border border-emerald-500/60 rounded-lg p-2 text-[10px] text-emerald-300">
+              Deep Black/Navy • ITC Green • Gold Accent
+            </div>
+          </div>
+
+          {/* THEME 2 PREVIEW */}
+          <div
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_gold' })}
+            className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${
+              localOverlay.theme === 'itc_gold' ? 'bg-amber-950/40 border-amber-400' : 'bg-slate-950/70 border-slate-800'
+            }`}
+          >
+            <div className="text-[10px] font-heading font-black text-amber-400 uppercase mb-1">Theme 2</div>
+            <div className="text-sm font-bold text-white mb-2">ITC SPORTS GOLD</div>
+            <div className="bg-[#0a0a0c] border border-amber-400/60 rounded-lg p-2 text-[10px] text-amber-300">
+              Black • Gold • Dark Charcoal
+            </div>
+          </div>
+
+          {/* THEME 3 PREVIEW */}
+          <div
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_neon' })}
+            className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${
+              localOverlay.theme === 'itc_neon' ? 'bg-cyan-950/40 border-cyan-400' : 'bg-slate-950/70 border-slate-800'
+            }`}
+          >
+            <div className="text-[10px] font-heading font-black text-cyan-400 uppercase mb-1">Theme 3</div>
+            <div className="text-sm font-bold text-white mb-2">ITC SPORTS NEON</div>
+            <div className="bg-[#020617] border border-cyan-400/60 rounded-lg p-2 text-[10px] text-cyan-300">
+              Black • Neon Green • Cyan
+            </div>
+          </div>
+        </div>
+
+        {/* CUSTOM COLOR PICKERS IF CUSTOM THEME */}
+        {(localOverlay.theme === 'custom' || true) && (
+          <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-heading font-bold text-emerald-400 uppercase">Custom Color Pickers</div>
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Primary Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customPrimary || '#10b981'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customPrimary: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Secondary Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customSecondary || '#047857'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customSecondary: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Accent Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customAccent || '#fbbf24'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customAccent: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Text Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customText || '#ffffff'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customText: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Background Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customBg || '#050811'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customBg: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-heading mb-1">Border Color</label>
+                <input
+                  type="color"
+                  value={localOverlay.customBorder || '#10b981'}
+                  onChange={(e) => setLocalOverlay({ ...localOverlay, customBorder: e.target.value })}
+                  className="w-full h-9 bg-transparent cursor-pointer rounded"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SAVE, APPLY & RESET THEME BUTTONS */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-black text-xs rounded-xl shadow-lg transition-all"
+            >
+              Save Theme
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-heading font-black text-xs rounded-xl shadow-lg transition-all"
+            >
+              Apply Theme
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLocalOverlay({ ...localOverlay, theme: 'itc_premium', showLogo: true, showTicker: true, showAnimations: true })}
+            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-heading text-xs rounded-xl transition-all font-bold"
+          >
+            Reset Theme
+          </button>
+        </div>
+
+        {/* ADDITIONAL CUSTOMIZATION OPTIONS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-800">
           <div>
             <label className="block text-[11px] text-slate-400 uppercase font-heading mb-1">
               Scorebug Position
@@ -233,6 +439,46 @@ export function SettingsAndSponsorView({ sponsor, overlaySettings, match, onClos
 
           <div>
             <label className="block text-[11px] text-slate-400 uppercase font-heading mb-1">
+              Animation Style
+            </label>
+            <select
+              value={localOverlay.animationStyle || 'slide_in'}
+              onChange={(e) => setLocalOverlay({ ...localOverlay, animationStyle: e.target.value as any })}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+            >
+              <option value="slide_in">Slide In (Broadcast Smooth)</option>
+              <option value="fade_in">Fade In Smooth</option>
+              <option value="zoom">Zoom In Dynamic</option>
+              <option value="bounce">Bounce Effect</option>
+              <option value="glow">Glow & Pulse</option>
+              <option value="none">Minimal / No Animation</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-slate-400 uppercase font-heading mb-1">
+              Animation Speed
+            </label>
+            <div className="flex gap-2">
+              {(['slow', 'normal', 'fast'] as const).map((spd) => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => setLocalOverlay({ ...localOverlay, animationSpeed: spd })}
+                  className={`flex-1 py-2 text-xs font-heading font-bold uppercase rounded-lg border transition-all ${
+                    localOverlay.animationSpeed === spd
+                      ? 'bg-emerald-600 border-emerald-400 text-white'
+                      : 'bg-slate-900 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  {spd}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-slate-400 uppercase font-heading mb-1">
               Active Graphic Mode
             </label>
             <select
@@ -240,29 +486,60 @@ export function SettingsAndSponsorView({ sponsor, overlaySettings, match, onClos
               onChange={(e) => setLocalOverlay({ ...localOverlay, activeGraphic: e.target.value as any })}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
             >
-              <option value="SCOREBUG">Standard Lower Third Scorebug</option>
-              <option value="BOTH_SQUADS">Both Teams Squad / Playing XI</option>
-              <option value="TEAM_A_SQUAD">Team A Playing XI</option>
-              <option value="TEAM_B_SQUAD">Team B Playing XI</option>
-              <option value="MATCH_SUMMARY">Match / Innings Summary</option>
+              <option value="SCOREBUG">Standard Scorebug</option>
+              <option value="MINI_BUG">Mini Scorebug</option>
               <option value="SCORECARD">Fullscreen Inning Scorecard</option>
+              <option value="CURRENT_PARTNERSHIP">Current Partnership</option>
+              <option value="TOP_SCORERS">Top Scorers</option>
+              <option value="BEST_BOWLERS">Best Bowlers</option>
+              <option value="BOTH_SQUADS">Both Playing XI</option>
+              <option value="MATCH_SUMMARY">Match Summary</option>
+              <option value="RESULT_BANNER">Result Banner</option>
             </select>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-[11px] text-slate-400 uppercase font-heading mb-1">
-              Broadcast Animations
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-2">
-              <input
-                type="checkbox"
-                checked={localOverlay.showAnimations}
-                onChange={(e) => setLocalOverlay({ ...localOverlay, showAnimations: e.target.checked })}
-                className="rounded accent-emerald-500 w-4 h-4"
-              />
-              <span className="text-xs text-slate-300">Enable 4/6/Wicket Popups</span>
-            </label>
-          </div>
+        {/* TOGGLES: LOGO, SPONSOR, TICKER, ANIMATIONS */}
+        <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-800 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={localOverlay.showLogo !== false}
+              onChange={(e) => setLocalOverlay({ ...localOverlay, showLogo: e.target.checked })}
+              className="rounded accent-emerald-500 w-4 h-4"
+            />
+            <span className="text-slate-300 font-heading">Logo ON/OFF</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={localOverlay.showSponsor !== false}
+              onChange={(e) => setLocalOverlay({ ...localOverlay, showSponsor: e.target.checked })}
+              className="rounded accent-emerald-500 w-4 h-4"
+            />
+            <span className="text-slate-300 font-heading">Sponsor ON/OFF</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={localOverlay.showTicker !== false}
+              onChange={(e) => setLocalOverlay({ ...localOverlay, showTicker: e.target.checked })}
+              className="rounded accent-emerald-500 w-4 h-4"
+            />
+            <span className="text-slate-300 font-heading">Ticker ON/OFF</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={localOverlay.showAnimations !== false}
+              onChange={(e) => setLocalOverlay({ ...localOverlay, showAnimations: e.target.checked })}
+              className="rounded accent-emerald-500 w-4 h-4"
+            />
+            <span className="text-slate-300 font-heading">Event Popups (4/6/Wicket) ON/OFF</span>
+          </label>
         </div>
       </div>
 
