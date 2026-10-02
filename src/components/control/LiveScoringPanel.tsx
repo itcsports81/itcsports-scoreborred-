@@ -47,6 +47,7 @@ export function LiveScoringPanel({
   const [extraModalMode, setExtraModalMode] = useState<'WIDE_PLUS' | 'NO_BALL_PLUS' | 'BYE_PLUS' | 'LEG_BYE_PLUS' | null>(null);
   const [isSecondInningsModalOpen, setIsSecondInningsModalOpen] = useState(false);
   const [isChangeBatterModalOpen, setIsChangeBatterModalOpen] = useState(false);
+  const [isEndInningModalOpen, setIsEndInningModalOpen] = useState(false);
 
   const currentInning = match.innings[match.currentInningIndex];
   if (!currentInning) return null;
@@ -209,6 +210,64 @@ export function LiveScoringPanel({
     setIsSecondInningsModalOpen(false);
     const updated = startSecondInnings(match, sId, nsId, bId);
     await liveSync.updateMatch(updated);
+  };
+
+  const handleEndInning = () => {
+    if (scoringLocked || currentInning.isCompleted) return;
+    setIsEndInningModalOpen(true);
+  };
+
+  const executeEndInning = async () => {
+    setIsEndInningModalOpen(false);
+    if (scoringLocked || currentInning.isCompleted) return;
+    setScoringLocked(true);
+    try {
+      const newMatch: Match = JSON.parse(JSON.stringify(match));
+      const inn = newMatch.innings[newMatch.currentInningIndex];
+      if (inn) {
+        inn.isCompleted = true;
+      }
+
+      if (newMatch.currentInningIndex === 0) {
+        await liveSync.updateMatch(newMatch);
+        setIsSecondInningsModalOpen(true);
+      } else {
+        newMatch.isMatchCompleted = true;
+        const score1 = newMatch.innings[0].runs;
+        const score2 = inn.runs;
+        const wickets2 = inn.wickets;
+        if (score2 > score1) {
+          newMatch.winnerTeamId = newMatch.innings[1].battingTeamId;
+          newMatch.resultSummary = `${newMatch.innings[1].battingTeamName} won by ${10 - wickets2} wickets`;
+        } else if (score1 > score2) {
+          newMatch.winnerTeamId = newMatch.innings[0].battingTeamId;
+          newMatch.resultSummary = `${newMatch.innings[0].battingTeamName} won by ${score1 - score2} runs`;
+        } else {
+          newMatch.resultSummary = `Match Tied`;
+        }
+        await liveSync.updateMatch(newMatch);
+      }
+    } finally {
+      setScoringLocked(false);
+    }
+  };
+
+  const executeAbandonMatch = async () => {
+    setIsEndInningModalOpen(false);
+    if (scoringLocked) return;
+    setScoringLocked(true);
+    try {
+      const newMatch: Match = JSON.parse(JSON.stringify(match));
+      newMatch.innings.forEach((inn) => {
+        inn.isCompleted = true;
+      });
+      newMatch.isMatchCompleted = true;
+      newMatch.winnerTeamId = undefined;
+      newMatch.resultSummary = 'Match Abandoned (Rain / Technical Issue)';
+      await liveSync.updateMatch(newMatch);
+    } finally {
+      setScoringLocked(false);
+    }
   };
 
   const handleConfirmChangeBatter = async (isStriker: boolean, newPlayer: Player) => {
@@ -724,6 +783,14 @@ export function LiveScoringPanel({
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={handleEndInning}
+                disabled={scoringLocked || currentInning.isCompleted}
+                className="px-4 py-2 bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-300 rounded-xl font-heading text-xs font-bold transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1.5"
+              >
+                🏁 END INNING
+              </button>
+              <button
+                type="button"
                 onClick={handleUndo}
                 disabled={scoringLocked || currentInning.deliveries.length === 0}
                 className="px-5 py-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl font-heading text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
@@ -778,6 +845,57 @@ export function LiveScoringPanel({
         onConfirmBye={handleConfirmBye}
         onClose={() => setExtraModalMode(null)}
       />
+
+      {/* END INNING / ABANDON MATCH MODAL */}
+      {isEndInningModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0b1324] border-2 border-amber-500 rounded-2xl max-w-md w-full p-6 shadow-2xl text-slate-100 animate-in fade-in zoom-in-95">
+            <h3 className="text-xl font-bold font-heading text-amber-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <span>⚠️</span> END INNING OR ABANDON MATCH?
+            </h3>
+            <p className="text-xs text-slate-300 mb-5 leading-relaxed">
+              Choose an option for stopping the match due to rain, technical failure, or stoppage:
+            </p>
+            <div className="space-y-3 mb-5">
+              <button
+                type="button"
+                onClick={executeEndInning}
+                className="w-full p-3 bg-amber-950/80 hover:bg-amber-900 border border-amber-600 rounded-xl text-left transition-all active:scale-95 flex flex-col"
+              >
+                <span className="font-heading font-black text-sm text-amber-200">
+                  🏁 End Current Inning Only
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  {match.currentInningIndex === 0 ? 'Closes 1st innings and prompts to start 2nd innings' : 'Finalizes the match normally'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={executeAbandonMatch}
+                className="w-full p-3 bg-rose-950/80 hover:bg-rose-900 border border-rose-600 rounded-xl text-left transition-all active:scale-95 flex flex-col"
+              >
+                <span className="font-heading font-black text-sm text-rose-200">
+                  🌧️ Abandon / Cancel Match (Rain / Technical)
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  Fully cancels match, ends both 1st & 2nd innings at once ("Match Abandoned")
+                </span>
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsEndInningModalOpen(false)}
+                className="px-4 py-2 text-slate-400 font-heading text-xs hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2ND INNINGS START MODAL */}
       {isSecondInningsModalOpen && (
