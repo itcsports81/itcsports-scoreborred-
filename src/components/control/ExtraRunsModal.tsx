@@ -120,6 +120,17 @@ export function ExtraRunsModal({
               Standard 1 No Ball penalty is added to extras and Free Hit is activated. Select runs scored off the bat:
             </p>
 
+            {/* SIMPLE NO BALL BUTTON */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => onConfirmNoBall(0, true, 0)}
+                className="w-full py-3 px-4 bg-orange-600 hover:bg-orange-500 border border-orange-400 text-white font-heading font-black text-sm uppercase rounded-xl tracking-wider shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
+              >
+                <span>[ NO BALL ] (Standard 1 Run Penalty Only)</span>
+              </button>
+            </div>
+
             <div className="text-[11px] font-heading font-bold text-emerald-400 uppercase tracking-wider mb-2">
               Runs Off the Bat (Credited to Striker)
             </div>
