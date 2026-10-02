@@ -49,6 +49,7 @@ export function ExtraRunsModal({
 
             <div className="grid grid-cols-2 gap-2.5 mb-4">
               {[
+                { add: 0, total: 1, label: 'JUST 1 WIDE', desc: 'Standard 1 wide penalty', swap: false },
                 { add: 1, total: 2, label: 'WIDE + 1', desc: '1 run run (Strike swaps)', swap: true },
                 { add: 2, total: 3, label: 'WIDE + 2', desc: '2 runs run', swap: false },
                 { add: 3, total: 4, label: 'WIDE + 3', desc: '3 runs run (Strike swaps)', swap: true },

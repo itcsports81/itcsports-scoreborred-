@@ -14,6 +14,7 @@ import { NewBatterModal } from './NewBatterModal.js';
 import { NextBowlerModal } from './NextBowlerModal.js';
 import { MatchSummaryModal } from './MatchSummaryModal.js';
 import { ExtraRunsModal } from './ExtraRunsModal.js';
+import { ChangeBatterModal } from './ChangeBatterModal.js';
 
 interface LiveScoringPanelProps {
   match: Match;
@@ -45,6 +46,7 @@ export function LiveScoringPanel({
   const [extraInputRuns, setExtraInputRuns] = useState<number>(0);
   const [extraModalMode, setExtraModalMode] = useState<'WIDE_PLUS' | 'NO_BALL_PLUS' | 'BYE_PLUS' | 'LEG_BYE_PLUS' | null>(null);
   const [isSecondInningsModalOpen, setIsSecondInningsModalOpen] = useState(false);
+  const [isChangeBatterModalOpen, setIsChangeBatterModalOpen] = useState(false);
 
   const currentInning = match.innings[match.currentInningIndex];
   if (!currentInning) return null;
@@ -209,6 +211,50 @@ export function LiveScoringPanel({
     await liveSync.updateMatch(updated);
   };
 
+  const handleConfirmChangeBatter = async (isStriker: boolean, newPlayer: Player) => {
+    setIsChangeBatterModalOpen(false);
+    const newMatch: Match = JSON.parse(JSON.stringify(match));
+    const inn = newMatch.innings[newMatch.currentInningIndex];
+    if (inn) {
+      if (isStriker) {
+        inn.strikerId = newPlayer.id;
+        const existing = inn.batters.find((b) => b.playerId === newPlayer.id);
+        if (!existing) {
+          inn.batters.push({
+            playerId: newPlayer.id,
+            playerName: newPlayer.name,
+            shortName: newPlayer.shortName || newPlayer.name,
+            runs: 0,
+            balls: 0,
+            fours: 0,
+            sixes: 0,
+            isOut: false,
+            battingOrder: inn.batters.length + 1,
+            strikeRate: 0,
+          });
+        }
+      } else {
+        inn.nonStrikerId = newPlayer.id;
+        const existing = inn.batters.find((b) => b.playerId === newPlayer.id);
+        if (!existing) {
+          inn.batters.push({
+            playerId: newPlayer.id,
+            playerName: newPlayer.name,
+            shortName: newPlayer.shortName || newPlayer.name,
+            runs: 0,
+            balls: 0,
+            fours: 0,
+            sixes: 0,
+            isOut: false,
+            battingOrder: inn.batters.length + 1,
+            strikeRate: 0,
+          });
+        }
+      }
+      await liveSync.updateMatch(newMatch);
+    }
+  };
+
   const handleSaveToHistory = async () => {
     await liveSync.saveMatchToHistory(match, true);
     alert('Match saved to history successfully and player career stats updated!');
@@ -216,8 +262,8 @@ export function LiveScoringPanel({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4">
-      {/* TOP NAVIGATION / STATUS BAR */}
-      <div className="bg-[#080d19] border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+      {/* TOP NAVIGATION / STATUS BAR - HIDDEN ON MOBILE */}
+      <div className="hidden sm:flex bg-[#080d19] border border-slate-800 rounded-2xl p-4 flex-wrap items-center justify-between gap-3 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-emerald-500 text-black px-3 py-1 rounded-lg font-heading font-black text-xs tracking-wider">
             <span>ITC SPORTS</span>
@@ -402,140 +448,94 @@ export function LiveScoringPanel({
           </div>
         </div>
 
-        {/* MASSIVE SCORE & OVERS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-center mb-6">
-          {/* Main Runs & Wickets */}
-          <div className="flex items-baseline justify-between md:justify-start gap-2">
-            <div className="flex items-baseline gap-1">
-              <span className="font-numbers text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-none drop-shadow-md">
+        {/* MOBILE COMPACT SCORE & PLAYERS (MOBILE ONLY) */}
+        <div className="block sm:hidden bg-slate-900/60 border border-slate-800 rounded-xl p-3 mb-3 space-y-2">
+          {/* Main Runs & Wickets & Overs */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-baseline gap-2">
+              <span className="font-numbers text-5xl font-black text-white tracking-tight leading-none">
                 {currentInning.runs}
               </span>
-              <span className="font-numbers text-4xl sm:text-5xl md:text-6xl font-black text-emerald-400 leading-none">
+              <span className="font-numbers text-4xl font-black text-emerald-400 leading-none">
                 /{currentInning.wickets}
               </span>
             </div>
-            <div className="ml-2 sm:ml-4 pl-3 sm:pl-4 border-l border-slate-800">
-              <div className="font-numbers text-2xl sm:text-3xl md:text-4xl font-black text-slate-200 leading-none">
+            <div className="text-right">
+              <div className="font-numbers text-2xl font-black text-slate-200 leading-none">
                 {currentInning.oversString}
               </div>
-              <div className="text-[9px] sm:text-[10px] uppercase font-heading tracking-widest text-slate-400 mt-0.5 sm:mt-1">
-                OVERS COMPLETED
+              <div className="text-[9px] uppercase font-heading tracking-widest text-slate-400 mt-0.5">
+                OVERS
               </div>
             </div>
           </div>
 
-          {/* Current Partnership */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 text-xs">
-            <div className="text-[10px] uppercase font-heading text-emerald-400 tracking-wider mb-1 font-bold">
-              Current Partnership
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-numbers text-2xl font-bold text-white">
-                {currentInning.currentPartnership?.totalRuns ?? 0}
-              </span>
-              <span className="text-slate-400">
-                runs ({currentInning.currentPartnership?.balls ?? 0} legal balls)
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-400 mt-0.5 truncate">
-              {currentInning.currentPartnership?.batter1Name} & {currentInning.currentPartnership?.batter2Name}
-            </div>
+          {/* Bowler under score */}
+          <div className="text-xs font-heading text-slate-300 pt-1.5 border-t border-slate-800/80 flex items-center justify-between">
+            <span className="text-emerald-400 font-bold shrink-0">BOWL:</span>
+            <span className="text-white font-semibold truncate mx-2">{bowler?.playerName || 'Bowler'}</span>
+            <span className="font-numbers text-emerald-300 shrink-0">
+              {bowler ? `${Math.floor(bowler.legalBalls / 6)}.${bowler.legalBalls % 6}` : '0.0'} ov • {bowler?.wickets ?? 0}w-{bowler?.runsConceded ?? 0}r
+            </span>
           </div>
 
-          {/* Extras breakdown */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 text-xs">
-            <div className="text-[10px] uppercase font-heading text-emerald-400 tracking-wider mb-1 font-bold">
-              Extras Total: {currentInning.extras.total}
+          {/* Striker & Non-Striker compact text rows without outlines */}
+          <div className="space-y-1 pt-1.5 border-t border-slate-800/80 text-xs font-heading">
+            <div className="flex items-center justify-between text-slate-200">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-emerald-400 font-bold">▶</span>
+                <span className="font-bold text-white truncate">{striker?.playerName || 'Striker'}</span>
+              </div>
+              <span className="font-numbers text-emerald-300 font-bold shrink-0 ml-2">{striker?.runs ?? 0}* <span className="text-slate-400 font-normal">({striker?.balls ?? 0}b)</span></span>
             </div>
-            <div className="grid grid-cols-5 gap-1 font-numbers text-center">
-              <div className="bg-black/40 rounded p-1">
-                <span className="text-[9px] text-slate-400 font-sans block">W</span>
-                <span className="text-sm font-bold text-emerald-400">{currentInning.extras.wides}</span>
+            <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-slate-500">○</span>
+                <span className="font-medium text-slate-300 truncate">{nonStriker?.playerName || 'Non-Striker'}</span>
               </div>
-              <div className="bg-black/40 rounded p-1">
-                <span className="text-[9px] text-slate-400 font-sans block">NB</span>
-                <span className="text-sm font-bold text-amber-400">{currentInning.extras.noBalls}</span>
-              </div>
-              <div className="bg-black/40 rounded p-1">
-                <span className="text-[9px] text-slate-400 font-sans block">B</span>
-                <span className="text-sm font-bold text-slate-200">{currentInning.extras.byes}</span>
-              </div>
-              <div className="bg-black/40 rounded p-1">
-                <span className="text-[9px] text-slate-400 font-sans block">LB</span>
-                <span className="text-sm font-bold text-slate-200">{currentInning.extras.legByes}</span>
-              </div>
-              <div className="bg-black/40 rounded p-1">
-                <span className="text-[9px] text-slate-400 font-sans block">PEN</span>
-                <span className="text-sm font-bold text-slate-200">{currentInning.extras.penalty}</span>
-              </div>
+              <span className="font-numbers text-slate-300 shrink-0 ml-2">{nonStriker?.runs ?? 0}* <span className="text-slate-500 font-normal">({nonStriker?.balls ?? 0}b)</span></span>
             </div>
           </div>
         </div>
 
-        {/* ACTIVE BATTERS & CURRENT BOWLER CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Striker Card */}
-          <div className="bg-emerald-950/40 border-2 border-emerald-500 rounded-xl p-4 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] uppercase font-heading text-emerald-400 tracking-wider font-bold flex items-center gap-1">
-                  <span className="animate-pulse">▶</span> STRIKER
-                </span>
-                <h3 className="font-heading font-black text-lg text-white">{striker?.playerName || 'Striker'}</h3>
-              </div>
-              <span className="font-numbers text-3xl font-black text-emerald-300">
-                {striker?.runs ?? 0}
+        {/* DESKTOP SCORE & ACTIVE PLAYERS ROW */}
+        <div className="hidden sm:flex bg-slate-900/60 border border-slate-800 rounded-2xl p-4 mb-4 flex-col md:flex-row items-center justify-between gap-4">
+          {/* Main Runs & Wickets & Overs */}
+          <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-1">
+              <span className="font-numbers text-5xl sm:text-6xl font-black text-white tracking-tight leading-none">
+                {currentInning.runs}
+              </span>
+              <span className="font-numbers text-4xl sm:text-5xl font-black text-emerald-400 leading-none">
+                /{currentInning.wickets}
               </span>
             </div>
-            <div className="mt-3 pt-2 border-t border-emerald-900/60 flex justify-between text-xs font-numbers text-slate-300">
-              <span>{striker?.balls ?? 0} balls</span>
-              <span>{striker?.fours ?? 0} x 4s</span>
-              <span>{striker?.sixes ?? 0} x 6s</span>
-              <span className="text-emerald-400 font-bold">SR {(striker?.strikeRate ?? 0).toFixed(1)}</span>
+            <div className="pl-3 border-l border-slate-800">
+              <div className="font-numbers text-2xl sm:text-3xl font-black text-slate-200 leading-none">
+                {currentInning.oversString}
+              </div>
+              <div className="text-[9px] uppercase font-heading tracking-widest text-slate-400 mt-0.5">
+                OVERS
+              </div>
             </div>
           </div>
 
-          {/* Non-Striker Card */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] uppercase font-heading text-slate-400 tracking-wider font-bold">
-                  NON-STRIKER
-                </span>
-                <h3 className="font-heading font-black text-lg text-slate-200">
-                  {nonStriker?.playerName || 'Non-Striker'}
-                </h3>
-              </div>
-              <span className="font-numbers text-3xl font-bold text-slate-300">
-                {nonStriker?.runs ?? 0}
-              </span>
+          {/* Compact Striker, Non-Striker & Bowler Line */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-heading">
+            <div className="bg-emerald-950/60 border border-emerald-500/60 px-3 py-2 rounded-xl flex items-center gap-2">
+              <span className="text-emerald-400 font-bold">▶ STR:</span>
+              <span className="text-white font-black">{striker?.playerName || 'Striker'}</span>
+              <span className="font-numbers text-emerald-300 font-bold">({striker?.runs ?? 0}* / {striker?.balls ?? 0}b)</span>
             </div>
-            <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between text-xs font-numbers text-slate-400">
-              <span>{nonStriker?.balls ?? 0} balls</span>
-              <span>{nonStriker?.fours ?? 0} x 4s</span>
-              <span>{nonStriker?.sixes ?? 0} x 6s</span>
-              <span className="text-slate-300">SR {(nonStriker?.strikeRate ?? 0).toFixed(1)}</span>
+            <div className="bg-slate-950/60 border border-slate-800 px-3 py-2 rounded-xl flex items-center gap-2">
+              <span className="text-slate-400 font-bold">NON-STR:</span>
+              <span className="text-slate-200 font-bold">{nonStriker?.playerName || 'Non-Striker'}</span>
+              <span className="font-numbers text-slate-400">({nonStriker?.runs ?? 0}* / {nonStriker?.balls ?? 0}b)</span>
             </div>
-          </div>
-
-          {/* Bowler Card */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] uppercase font-heading text-emerald-400 tracking-wider font-bold">
-                  CURRENT BOWLER
-                </span>
-                <h3 className="font-heading font-black text-lg text-white">{bowler?.playerName || 'Bowler'}</h3>
-              </div>
-              <span className="font-numbers text-2xl font-bold text-emerald-400">
-                {bowler ? `${Math.floor(bowler.legalBalls / 6)}.${bowler.legalBalls % 6}` : '0.0'} ov
-              </span>
-            </div>
-            <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between text-xs font-numbers text-slate-300">
-              <span>{bowler?.maidens ?? 0} m</span>
-              <span>{bowler?.runsConceded ?? 0} r</span>
-              <span className="text-emerald-400 font-bold">{bowler?.wickets ?? 0} w</span>
-              <span>Eco {(bowler?.economy ?? 0).toFixed(1)}</span>
+            <div className="bg-slate-950/60 border border-slate-800 px-3 py-2 rounded-xl flex items-center gap-2">
+              <span className="text-emerald-400 font-bold">BOWL:</span>
+              <span className="text-white font-bold">{bowler?.playerName || 'Bowler'}</span>
+              <span className="font-numbers text-emerald-300">({bowler ? `${Math.floor(bowler.legalBalls / 6)}.${bowler.legalBalls % 6}` : '0.0'} ov, {bowler?.wickets ?? 0}w-{bowler?.runsConceded ?? 0}r)</span>
             </div>
           </div>
         </div>
@@ -594,8 +594,8 @@ export function LiveScoringPanel({
 
         {/* PRIMARY SCORING PAD (LARGE TACTILE TOUCH TARGETS) */}
         <div className="space-y-4">
-          {/* RUN BUTTONS (0 - 6) */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          {/* RUN BUTTONS (0 - 6) - EXTRA LARGE MOBILE TOUCH TARGETS */}
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
             {[
               { runs: 0, label: '0 • DOT', short: 'DOT' },
               { runs: 1, label: '1 SINGLE', short: '1' },
@@ -610,111 +610,70 @@ export function LiveScoringPanel({
                 type="button"
                 disabled={scoringLocked || currentInning.isCompleted}
                 onClick={() => scoreBall(btn.runs)}
-                className={`py-3 sm:py-4 px-0.5 sm:px-1 rounded-xl font-heading font-black text-sm uppercase transition-all shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`py-5 sm:py-6 px-1 rounded-2xl font-heading font-black uppercase transition-all shadow-xl active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center ${
                   btn.isFour
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-black border border-emerald-400'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-black border-2 border-emerald-300 shadow-emerald-900/50'
                     : btn.isSix
-                    ? 'bg-amber-500 hover:bg-amber-400 text-black border border-amber-300 font-black'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-100 border border-slate-700 hover:border-slate-500'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-black border-2 border-amber-200 shadow-amber-900/50 font-black'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-100 border-2 border-slate-700 hover:border-slate-500'
                 }`}
               >
-                <span className="font-numbers text-xl sm:text-2xl block">{btn.runs}</span>
-                <span className="text-[9px] sm:text-[10px] tracking-wider text-slate-300 block truncate">
-                  <span className="hidden sm:inline">{btn.label.split(' ')[1]}</span>
-                  <span className="sm:hidden">{btn.short}</span>
+                <span className="font-numbers text-3xl sm:text-4xl block leading-none mb-1">{btn.runs}</span>
+                <span className="text-[10px] sm:text-xs tracking-wider text-slate-300 block font-bold">
+                  {btn.short}
                 </span>
               </button>
             ))}
           </div>
 
-          {/* EXTRAS ROW & WICKET BUTTON */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
-            {/* WIDE BUTTONS */}
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => scoreBall(0, 'WIDE', 0)}
-                className="py-2.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-600 text-purple-200 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
-              >
-                WIDE (+1)
-              </button>
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => setExtraModalMode('WIDE_PLUS')}
-                className="py-1 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/60 text-purple-300 rounded-lg font-heading text-[10px] font-bold uppercase transition-all"
-              >
-                WIDE + RUNS ▾
-              </button>
-            </div>
+          {/* EXTRAS ROW & WICKET BUTTON (POPUP-BASED, SAVING MASSIVE SPACE) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            {/* WIDE BUTTON */}
+            <button
+              type="button"
+              disabled={scoringLocked || currentInning.isCompleted}
+              onClick={() => setExtraModalMode('WIDE_PLUS')}
+              className="py-3 bg-purple-950/80 hover:bg-purple-900 border border-purple-600 text-purple-200 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
+            >
+              WIDE (+RUNS)
+            </button>
 
-            {/* NO BALL BUTTONS */}
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => scoreBall(0, 'NO_BALL', 0)}
-                className="py-2.5 bg-orange-950/80 hover:bg-orange-900 border border-orange-500 text-orange-200 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
-              >
-                NO BALL (+1)
-              </button>
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => setExtraModalMode('NO_BALL_PLUS')}
-                className="py-1 bg-orange-900/40 hover:bg-orange-800/60 border border-orange-600/60 text-orange-300 rounded-lg font-heading text-[10px] font-bold uppercase transition-all"
-              >
-                NB + RUNS ▾
-              </button>
-            </div>
+            {/* NO BALL BUTTON */}
+            <button
+              type="button"
+              disabled={scoringLocked || currentInning.isCompleted}
+              onClick={() => setExtraModalMode('NO_BALL_PLUS')}
+              className="py-3 bg-orange-950/80 hover:bg-orange-900 border border-orange-500 text-orange-200 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
+            >
+              NO BALL (+RUNS)
+            </button>
 
-            {/* BYE BUTTONS */}
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => scoreBall(1, 'BYE')}
-                className="py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
-              >
-                BYE (+1)
-              </button>
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => setExtraModalMode('BYE_PLUS')}
-                className="py-1 bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 rounded-lg font-heading text-[10px] uppercase transition-all"
-              >
-                BYES + ▾
-              </button>
-            </div>
+            {/* BYE BUTTON */}
+            <button
+              type="button"
+              disabled={scoringLocked || currentInning.isCompleted}
+              onClick={() => setExtraModalMode('BYE_PLUS')}
+              className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
+            >
+              BYES (+RUNS)
+            </button>
 
-            {/* LEG BYE BUTTONS */}
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => scoreBall(1, 'LEG_BYE')}
-                className="py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
-              >
-                LEG BYE (+1)
-              </button>
-              <button
-                type="button"
-                disabled={scoringLocked || currentInning.isCompleted}
-                onClick={() => setExtraModalMode('LEG_BYE_PLUS')}
-                className="py-1 bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 rounded-lg font-heading text-[10px] uppercase transition-all"
-              >
-                LEG BYES + ▾
-              </button>
-            </div>
+            {/* LEG BYE BUTTON */}
+            <button
+              type="button"
+              disabled={scoringLocked || currentInning.isCompleted}
+              onClick={() => setExtraModalMode('LEG_BYE_PLUS')}
+              className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
+            >
+              LEG BYES (+RUNS)
+            </button>
 
             {/* PENALTY */}
             <button
               type="button"
               disabled={scoringLocked || currentInning.isCompleted}
               onClick={() => scoreBall(5, 'PENALTY')}
-              className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40 self-start w-full"
+              className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-heading font-bold text-xs uppercase shadow-md transition-all active:scale-95 disabled:opacity-40"
             >
               PENALTY (+5)
             </button>
@@ -724,14 +683,14 @@ export function LiveScoringPanel({
               type="button"
               disabled={scoringLocked || currentInning.isCompleted}
               onClick={() => setIsWicketModalOpen(true)}
-              className="col-span-2 sm:col-span-3 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-heading font-black text-sm uppercase tracking-wider shadow-lg shadow-rose-950 transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
+              className="py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-heading font-black text-sm uppercase tracking-wider shadow-lg shadow-rose-950 transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-              WICKET / DISMISSAL
+              WICKET
             </button>
           </div>
 
-          {/* UTILITY ROW: SWAP STRIKE, CHANGE BOWLER, UNDO */}
+          {/* UTILITY ROW: SWAP STRIKE, CHANGE BOWLER, CHANGE BATTER, UNDO */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
             <div className="flex items-center gap-2">
               <button
@@ -750,6 +709,15 @@ export function LiveScoringPanel({
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-heading text-xs font-bold transition-all active:scale-95"
               >
                 CHANGE BOWLER
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsChangeBatterModalOpen(true)}
+                disabled={scoringLocked}
+                className="px-4 py-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-300 rounded-xl font-heading text-xs font-bold transition-all active:scale-95"
+              >
+                👤 CHANGE BATTER
               </button>
             </div>
 
@@ -780,6 +748,13 @@ export function LiveScoringPanel({
         match={match}
         replacesStriker={replacesStriker}
         onSelectBatter={handleSelectNewBatter}
+      />
+
+      <ChangeBatterModal
+        isOpen={isChangeBatterModalOpen}
+        match={match}
+        onClose={() => setIsChangeBatterModalOpen(false)}
+        onConfirmChange={handleConfirmChangeBatter}
       />
 
       <NextBowlerModal

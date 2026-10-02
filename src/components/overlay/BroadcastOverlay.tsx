@@ -511,7 +511,7 @@ function ScorebugComponent({
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-5xl transition-all">
+    <div className="flex flex-col items-center w-full max-w-7xl px-4 transition-all">
       {/* SPECIAL BADGES BAR: FREE HIT, POWERPLAY, TARGET */}
       <div className="flex items-center gap-2 mb-1">
         {currentInning.freeHitActive && (

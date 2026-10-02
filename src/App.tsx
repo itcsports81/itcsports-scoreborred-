@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { liveSync } from './services/liveSync.js';
 import { AppDatabase, Match } from './types/cricket.js';
 import { BroadcastOverlay } from './components/overlay/BroadcastOverlay.js';
@@ -12,8 +12,9 @@ import { SettingsAndSponsorView } from './components/control/SettingsAndSponsorV
 import { OperatorLogin } from './components/control/OperatorLogin.js';
 import { ChangePinModal } from './components/control/ChangePinModal.js';
 import { MobileConnectModal } from './components/control/MobileConnectModal.js';
+import { MobileMenuModal } from './components/control/MobileMenuModal.js';
 
-type ActiveView = 'LIVE' | 'SETUP' | 'SCORECARD' | 'TEAMS' | 'PLAYERS' | 'HISTORY' | 'SETTINGS' | 'PREVIEW';
+type ActiveView = 'LIVE' | 'SETUP' | 'SCORECARD' | 'TEAMS' | 'PLAYERS' | 'HISTORY' | 'SETTINGS';
 
 export default function App() {
   const [database, setDatabase] = useState<AppDatabase | null>(null);
@@ -21,6 +22,7 @@ export default function App() {
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [isChangePinOpen, setIsChangePinOpen] = useState(false);
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => liveSync.isAuthenticated());
   const [isOverlayRoute] = useState<boolean>(() => {
@@ -88,23 +90,35 @@ export default function App() {
       {/* GLOBAL TOP BROADCASTER HEADER */}
       <header className="bg-[#080d1a] border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-md px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-black px-3 py-1 rounded-lg font-heading font-black text-sm tracking-wider shadow-md shadow-emerald-950/50">
-              <span>ITC SPORTS</span>
+          {/* Brand Logo & Mobile Menu Trigger */}
+          <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-black px-3 py-1 rounded-lg font-heading font-black text-sm tracking-wider shadow-md shadow-emerald-950/50">
+                <span>ITC SPORTS</span>
+              </div>
+              <div>
+                <span className="font-heading font-bold text-sm text-white tracking-wide block">
+                  LIVE CRICKET SCORING & BROADCAST SYSTEM
+                </span>
+                <span className="text-[10px] text-emerald-400 font-heading tracking-widest uppercase">
+                  VMIX & OBS BROADCAST ENGINE • REAL-TIME SYNC
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="font-heading font-bold text-sm text-white tracking-wide block">
-                LIVE CRICKET SCORING & BROADCAST SYSTEM
-              </span>
-              <span className="text-[10px] text-emerald-400 font-heading tracking-widest uppercase">
-                VMIX & OBS BROADCAST ENGINE • REAL-TIME SYNC
-              </span>
-            </div>
+
+            {/* MOBILE MENU BUTTON (VISIBLE ONLY ON MOBILE) */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="sm:hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-heading font-black flex items-center gap-1.5 shadow-lg shadow-emerald-950/80 active:scale-95 transition-transform shrink-0"
+            >
+              <span className="text-sm font-bold">☰</span>
+              <span>MENU</span>
+            </button>
           </div>
 
-          {/* VMIX / OVERLAY URL COPY & PREVIEW */}
-          <div className="flex items-center gap-2">
+          {/* VMIX / OVERLAY URL COPY & PREVIEW (DESKTOP ONLY, MOBILE USES ☰ MENU) */}
+          <div className="hidden sm:flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsMobileModalOpen(true)}
@@ -127,7 +141,7 @@ export default function App() {
               href="/overlay"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-heading font-bold flex items-center gap-1 transition-colors"
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-heading font-bold flex items-center gap-1.5 transition-colors shadow-sm"
               title="Open full transparent broadcast overlay in a new window"
             >
               <span>↗ POPUP OVERLAY</span>
@@ -153,8 +167,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* PRIMARY NAVIGATION TABS */}
-        <div className="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/60 flex items-center gap-1 overflow-x-auto pb-1">
+        {/* PRIMARY NAVIGATION TABS (DESKTOP ONLY, MOBILE USES ☰ MENU) */}
+        <div className="hidden sm:flex max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/60 items-center gap-1 overflow-x-auto pb-1">
           {[
             { id: 'LIVE', label: '🔴 LIVE SCORING' },
             { id: 'SCORECARD', label: '📊 FULL SCORECARD' },
@@ -163,7 +177,6 @@ export default function App() {
             { id: 'PLAYERS', label: '👥 PLAYER LIBRARY' },
             { id: 'HISTORY', label: '📁 MATCH HISTORY' },
             { id: 'SETTINGS', label: '⚙️ SETTINGS & PASSWORD' },
-            { id: 'PREVIEW', label: '📺 OVERLAY PREVIEW' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -247,59 +260,6 @@ export default function App() {
             onClose={() => setActiveView('LIVE')}
           />
         )}
-
-        {/* VIEW: OVERLAY PREVIEW */}
-        {activeView === 'PREVIEW' && (
-          <div className="bg-[#080d19] border border-slate-800 rounded-2xl p-6 shadow-2xl text-slate-100 max-w-5xl mx-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <span className="text-xs text-emerald-400 font-heading tracking-widest uppercase">
-                  VMIX / OBS SIMULATION
-                </span>
-                <h2 className="text-xl font-black font-heading text-white">Live Broadcast Overlay Preview</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveView('LIVE')}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-heading text-xs"
-              >
-                Back to Scoring
-              </button>
-            </div>
-
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-xs text-slate-300 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div>
-                <span className="font-bold text-white block mb-0.5">vMix / OBS Browser Source URL:</span>
-                <code className="text-emerald-400 font-mono select-all bg-black/40 px-2 py-1 rounded">
-                  {overlayUrl}
-                </code>
-              </div>
-              <button
-                type="button"
-                onClick={copyOverlayUrl}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-black font-heading text-xs rounded-xl uppercase tracking-wider shadow-md shrink-0"
-              >
-                {copiedUrl ? 'Copied!' : 'Copy Overlay URL'}
-              </button>
-            </div>
-
-            {/* Embedded simulation container (sports stadium background to show overlay transparency) */}
-            <div
-              className="relative w-full h-[480px] rounded-xl overflow-hidden border border-slate-700 shadow-2xl flex flex-col justify-end"
-              style={{
-                backgroundImage:
-                  'radial-gradient(ellipse at bottom, rgba(16, 185, 129, 0.15) 0%, rgba(5, 8, 17, 0.95) 100%), linear-gradient(to bottom, #091322, #040812)',
-              }}
-            >
-              <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-[10px] font-heading text-emerald-400 border border-slate-700">
-                STADIUM VIDEO FEED SIMULATION (TRANSPARENT SCOREBUG APPLIED)
-              </div>
-              <div className="w-full h-full">
-                <BroadcastOverlay />
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* MATCH SETUP MODAL */}
@@ -323,6 +283,23 @@ export default function App() {
       <MobileConnectModal
         isOpen={isMobileModalOpen}
         onClose={() => setIsMobileModalOpen(false)}
+      />
+
+      {/* MOBILE MENU & TOOLS DRAWER */}
+      <MobileMenuModal
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        onOpenSetup={() => setIsSetupOpen(true)}
+        onOpenScorecard={() => setActiveView('SCORECARD')}
+        onOpenTeams={() => setActiveView('TEAMS')}
+        onOpenPlayers={() => setActiveView('PLAYERS')}
+        onOpenHistory={() => setActiveView('HISTORY')}
+        onOpenSettings={() => setActiveView('SETTINGS')}
+        onOpenMobileConnect={() => setIsMobileModalOpen(true)}
+        onOpenChangePin={() => setIsChangePinOpen(true)}
+        onCopyOverlayUrl={copyOverlayUrl}
+        copiedUrl={copiedUrl}
+        onLogout={handleLogout}
       />
     </div>
   );
